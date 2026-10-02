@@ -217,11 +217,14 @@ o resultado em silêncio. Todas têm teste de regressão.
    `--disable-gpu` **e** `--enable-unsafe-swiftshader`. Com só a primeira, o
    Chrome atual desliga o WebGL e o Bing Maps redireciona para
    `/maps/sharing?...&webglerror=a`, sem resultados.
-2. **Flags repetidas são mescladas, não sobrescritas.** O `chromiumoxide` tem
-   `--lang=en_US` nos defaults e junta valores de chaves iguais: o `lang=pt-BR`
-   virava `--lang=en_US,pt-BR`, um locale inválido — em Linux o Bing devolveria
-   categorias em inglês. O motor desliga os defaults
-   (`disable_default_args`) e passa exatamente a lista de flags do chromedp.
+2. **Flags repetidas são mescladas, não sobrescritas.** O `chromiumoxide` junta
+   os valores de chaves iguais aos dos seus defaults. O Chrome recebia
+   `--lang=en_US,pt-BR` (um locale inválido no lugar do `pt-BR` que o motor Go
+   passa), `--force-color-profile=srgb,srgb`, `--password-store=basic,basic` e
+   `--enable-features` duplicado. O motor desliga os defaults
+   (`disable_default_args`) e passa exatamente a lista de flags do chromedp. O
+   teste `chrome_receives_flags_unmerged` lê a linha de comando real do Chrome
+   via `Browser.getBrowserCommandLine` e falha se a mesclagem voltar.
 3. **Perfil compartilhado entre processos.** O default do `chromiumoxide` é um
    `user-data-dir` fixo (`$TMPDIR/chromiumoxide-runner`); um segundo Chromium
    (relançamento, outro processo) morre com `SingletonLock: File exists`. Cada

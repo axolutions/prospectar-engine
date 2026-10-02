@@ -38,9 +38,11 @@ CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
   cargo run --release
 ```
 
-> **Locale no macOS:** o Chrome do macOS ignora a flag `--lang`, então rodando
-> local as categorias do Bing vêm em inglês ("Nutritionist"). Em Linux/Docker —
-> o ambiente de produção — vêm em português ("Nutricionista").
+> **Locale:** o efeito de `--lang=pt-BR` depende do build do Chrome. Com o
+> Chrome desktop (macOS, ou o Chrome completo do Ubuntu) as categorias do Bing
+> vêm em inglês ("Nutritionist"). Na imagem Docker de produção, com o
+> `headless-shell`, vêm em português ("Nutricionista") — o mesmo comportamento
+> do motor Go. Para validar dados em português, teste pela imagem Docker.
 
 ## Docker
 
@@ -61,23 +63,25 @@ Chromium, apaga o perfil temporário e sai com código 0.
 
 ```bash
 CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  cargo test                     # 65 testes
+  cargo test                     # 66 testes
 
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 ```
 
-Sem `CHROME_PATH`, os 3 testes que sobem o Chromium retornam cedo e aparecem
+Sem `CHROME_PATH`, os 4 testes que sobem o Chromium retornam cedo e aparecem
 como aprovados sem ter rodado (avisam no stderr). Para validar o browser,
-rode sempre com `CHROME_PATH` definido.
+rode sempre com `CHROME_PATH` definido. O CI roda com o Chrome do runner
+Ubuntu, então lá eles executam de verdade.
 
 Os testes cobrem o parsing do `data-entity` do Bing (inclusive o duplo-encode),
 o contrato JSON/BSON dos eventos e leads, a montagem da URL do Bing, a
 normalização e deduplicação de lugares, o geocoder (contra um servidor HTTP
 local), o tiling geográfico, a fila (cancelamento, fila cheia, timeout) e todas
 as rotas HTTP. Os testes de browser verificam regressões específicas do port:
-WebGL disponível, locale `pt-BR` (em Linux), perfil isolado por launch e
-liberação do slot de concorrência.
+WebGL disponível, flags chegando ao Chrome sem mesclagem (lidas da linha de
+comando real via CDP), perfil isolado por launch e liberação do slot de
+concorrência.
 
 A navegação real no Bing não é testada em unidade — o DOM do Bing muda sem
 aviso. Ela é validada por smoke com `curl` (ver
