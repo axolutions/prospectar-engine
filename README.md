@@ -63,7 +63,7 @@ Chromium, apaga o perfil temporário e sai com código 0.
 
 ```bash
 CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  cargo test                     # 66 testes
+  cargo test                     # 68 testes
 
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings

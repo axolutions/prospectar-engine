@@ -101,9 +101,16 @@ O worker consome os eventos do motor e traduz para o Mongo:
 | `done` | grava o lote restante, `status: "done"`, `leadCount` final |
 | `error` | grava o lote restante, `status: "error"`, `error: <mensagem>` |
 
-Se o stream fecha sem `done`/`error`, o job foi interrompido: vira `cancelled`
-se houve `DELETE`, senão `error` com "scrape interrompido (timeout ou
-cancelamento)".
+Se o stream fecha sem `done`/`error`, o job foi interrompido: o lote pendente
+é gravado e o job vira `cancelled` se houve `DELETE`, senão `error` com
+"scrape interrompido (timeout ou cancelamento)".
+
+> **Diferença intencional em relação ao Go:** o motor Go não grava o lote
+> pendente na interrupção. Um cancelamento no meio de uma página deixava
+> `leadCount` maior que o número de documentos em `scrapeleads` (visto num
+> teste real: `leadCount: 15` com 6 leads gravados), e o Orbita mostrava mais
+> leads do que listava. Os testes `cancelled_job_persists_every_counted_lead`
+> e `interrupted_job_persists_pending_leads_before_failing` cobrem o caso.
 
 ## Cancelamento
 
