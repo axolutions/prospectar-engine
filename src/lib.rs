@@ -2,6 +2,7 @@ pub mod browser;
 pub mod domain;
 pub mod geocode;
 pub mod gofmt;
+pub mod http;
 pub mod jobs;
 pub mod navigation;
 pub mod parsing;
