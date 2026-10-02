@@ -194,6 +194,10 @@ impl Inner {
             tracing::warn!("[job {}] set running: {e}", task.id);
         }
 
+        self.consume(task, &mut events).await;
+    }
+
+    async fn consume(&self, task: &Task, events: &mut mpsc::Receiver<Event>) {
         let mut batch: Vec<Lead> = Vec::new();
         let mut total = 0usize;
         let mut terminal = false;
@@ -234,6 +238,7 @@ impl Inner {
         if terminal {
             return;
         }
+        self.flush(&task.id, &mut batch, total).await;
         if self.was_cancelled(&task.id) {
             self.mark_cancelled(&task.id, total).await;
             return;
@@ -312,6 +317,7 @@ pub(crate) mod tests {
         pub failed: AtomicUsize,
         pub last_total: AtomicUsize,
         pub last_error: Mutex<String>,
+        pub appended: AtomicUsize,
     }
 
     #[async_trait]
@@ -319,7 +325,8 @@ pub(crate) mod tests {
         async fn set_running(&self, _: &str) -> Result<(), String> {
             Ok(())
         }
-        async fn append_leads(&self, _: &str, _: &[Lead], _: usize) -> Result<(), String> {
+        async fn append_leads(&self, _: &str, leads: &[Lead], _: usize) -> Result<(), String> {
+            self.appended.fetch_add(leads.len(), Ordering::SeqCst);
             Ok(())
         }
         async fn set_progress(&self, _: &str, _: i64, _: i64) -> Result<(), String> {
@@ -457,5 +464,55 @@ pub(crate) mod tests {
         assert_eq!(store.cancelled.load(Ordering::SeqCst), 1);
         assert_eq!(store.last_total.load(Ordering::SeqCst), 0);
         assert_eq!(store.failed.load(Ordering::SeqCst), 0);
+    }
+    fn interrupted_stream(
+        leads_before_progress: usize,
+        leads_after: usize,
+    ) -> mpsc::Receiver<Event> {
+        let (tx, rx) = mpsc::channel(64);
+        for i in 0..leads_before_progress {
+            tx.try_send(Event::lead(Lead {
+                id: format!("a{i}"),
+                ..Lead::default()
+            }))
+            .unwrap();
+        }
+        tx.try_send(Event::progress(1, leads_before_progress))
+            .unwrap();
+        for i in 0..leads_after {
+            tx.try_send(Event::lead(Lead {
+                id: format!("b{i}"),
+                ..Lead::default()
+            }))
+            .unwrap();
+        }
+        rx
+    }
+
+    #[tokio::test]
+    async fn cancelled_job_persists_every_counted_lead() {
+        let (q, store) = queue();
+        let task = Task {
+            id: "job-6".into(),
+            ..Task::default()
+        };
+        q.cancel("job-6");
+        q.inner.consume(&task, &mut interrupted_stream(6, 9)).await;
+        assert_eq!(store.appended.load(Ordering::SeqCst), 15);
+        assert_eq!(store.last_total.load(Ordering::SeqCst), 15);
+        assert_eq!(store.cancelled.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn interrupted_job_persists_pending_leads_before_failing() {
+        let (q, store) = queue();
+        let task = Task {
+            id: "job-7".into(),
+            ..Task::default()
+        };
+        q.inner.consume(&task, &mut interrupted_stream(2, 3)).await;
+        assert_eq!(store.appended.load(Ordering::SeqCst), 5);
+        assert_eq!(store.failed.load(Ordering::SeqCst), 1);
+        assert!(store.last_error.lock().unwrap().contains("interrompido"));
     }
 }
