@@ -205,6 +205,7 @@ async fn shutdown(mut r: Running) {
 
 #[cfg(test)]
 mod tests {
+    use chromiumoxide::cdp::browser_protocol::browser::GetBrowserCommandLineParams;
     use chromiumoxide::cdp::js_protocol::runtime::EvaluateParams;
 
     use super::*;
@@ -258,7 +259,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn browser_has_webgl_and_brazilian_locale() {
+    async fn browser_has_webgl() {
         if !chrome_available() {
             return;
         }
@@ -270,11 +271,35 @@ mod tests {
         )
         .await;
         assert!(webgl, "sem WebGL o Bing Maps redireciona para webglerror");
-        if cfg!(target_os = "linux") {
-            let lang: String = eval(tab.page(), "navigator.language").await;
-            assert_eq!(lang, "pt-BR");
-        }
         drop(tab);
+        pool.close().await;
+    }
+
+    #[tokio::test]
+    async fn chrome_receives_flags_unmerged() {
+        if !chrome_available() {
+            return;
+        }
+        let pool = Pool::new(1);
+        drop(pool.tab(&CancellationToken::new()).await.unwrap());
+        let args = {
+            let running = pool.running.lock().await;
+            running
+                .as_ref()
+                .unwrap()
+                .browser
+                .execute(GetBrowserCommandLineParams::default())
+                .await
+                .unwrap()
+                .result
+                .arguments
+                .clone()
+        };
+        let langs: Vec<&String> = args.iter().filter(|a| a.starts_with("--lang=")).collect();
+        assert_eq!(langs, vec!["--lang=pt-BR"], "flags: {args:?}");
+        assert!(args.iter().any(|a| a == "--enable-unsafe-swiftshader"));
+        assert!(args.iter().any(|a| a.contains("prospectar-chrome-")));
+        assert!(!args.iter().any(|a| a.contains("chromiumoxide-runner")));
         pool.close().await;
     }
 
