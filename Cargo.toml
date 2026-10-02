@@ -1,0 +1,31 @@
+[package]
+name = "prospectar-engine"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Motor de scraping do Prospectar (Orbita): raspa o Bing Maps e entrega leads por SSE ou fila no Mongo"
+publish = false
+
+[dependencies]
+async-trait = "0.1.92"
+axum = "0.8.9"
+chromiumoxide = "0.9.1"
+futures = "0.3.34"
+mongodb = "3.9.1"
+regex = "1.13.1"
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.151", features = ["float_roundtrip"] }
+tokio = { version = "1.53.1", features = ["full"] }
+tokio-util = "0.7.19"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+unicode-normalization = "0.1.25"
+
+[dev-dependencies]
+http-body-util = "0.1.5"
+tokio = { version = "1.53.1", features = ["full", "test-util"] }
+tower = { version = "0.5.3", features = ["util"] }
+
+[profile.release]
+strip = true
