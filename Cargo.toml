@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 description = "Motor de scraping do Prospectar (Orbita): raspa o Bing Maps e entrega leads por SSE ou fila no Mongo"
+license = "MIT"
+repository = "https://github.com/axolutions/prospectar-engine"
+homepage = "https://www.axolutions.com.br/open-source"
 publish = false
 
 [dependencies]
