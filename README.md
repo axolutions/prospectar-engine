@@ -1,9 +1,19 @@
 # prospectar-engine
 
-Motor de scraping do **Prospectar**, a feature de geração de leads do
-[Orbita](https://github.com/murichristopher/orbita). Raspa o **Bing Maps** com um
-Chromium headless e entrega os leads de duas formas: em tempo real por SSE ou
-por uma fila assíncrona que grava direto no Mongo do Orbita.
+Motor open source de prospecção de leads locais, mantido pela
+[Axolutions](https://www.axolutions.com.br). Raspa o **Bing Maps** com um
+Chromium headless e entrega os leads (nome, telefone, site, endereço, categoria,
+nota) de duas formas: em tempo real por SSE ou por uma fila assíncrona que grava
+direto no MongoDB.
+
+É o motor por trás do **Prospectar**, a busca de clientes do
+[Órbita](https://www.axolutions.com.br/orbita), a plataforma de agentes de IA
+para WhatsApp da Axolutions.
+
+> **Uso responsável:** os termos de uso do Bing restringem a coleta
+> automatizada. Este projeto é distribuído para fins educacionais e de
+> pesquisa; quem o executa responde pelo uso, pelo volume de requisições e pelo
+> tratamento dos dados coletados conforme a LGPD.
 
 Escrito em **Rust** (`axum` + `chromiumoxide` + `tokio`). É um port fiel do
 motor em Go que vivia em `orbita/scraper/`: mesma API HTTP, mesmos eventos,
@@ -175,8 +185,10 @@ termina com `status: "cancelled"` preservando os leads já coletados.
 
 ## Migrando do motor Go
 
-1. Publique a imagem deste repositório onde o `scraper.axolutions.com.br` roda
-   hoje, com as mesmas variáveis de ambiente do serviço Go.
+Para quem já roda o motor Go original do Prospectar.
+
+1. Publique a imagem deste repositório no lugar do serviço Go, com as mesmas
+   variáveis de ambiente.
 2. Valide com `curl https://<host>/health` e um `GET /scrape` de teste.
 3. Aponte `SCRAPER_URL` do Orbita para o novo host (ou troque o container
    atrás do mesmo domínio).
@@ -184,3 +196,11 @@ termina com `status: "cancelled"` preservando os leads já coletados.
 Nada muda no Orbita: rotas, payloads, eventos e documentos no Mongo são
 idênticos — ver o comparativo em
 [Validação de paridade](docs/ARCHITECTURE.md#validação-de-paridade-com-o-motor-go).
+
+## Licença
+
+[MIT](LICENSE) © Axolutions Serviços de Tecnologia LTDA.
+
+Feito pela [Axolutions](https://www.axolutions.com.br), que desenvolve sites,
+sistemas, aplicativos e agentes de IA e publica parte das suas ferramentas como
+código aberto: [github.com/axolutions](https://github.com/axolutions).
